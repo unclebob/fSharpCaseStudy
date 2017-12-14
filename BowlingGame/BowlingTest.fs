@@ -1,17 +1,19 @@
 module BowlingTest
 open NUnit.Framework
 open FsUnit
+// Note: you need the Fsharp.Core dll of version 4.1 or better
 
 type List<'a> with
     static member Prepend prefix list  =
         prefix |> List.append list   
 
+//This is the implementation from the video. Note the match is not complete (BAD!)
 let scoreFrames rolls =
     let rec loop rolls scores =
         match rolls with
             | [] -> scores
             | 10 :: r1 :: r2 :: rest ->
-                loop (List.skip 1 rolls) 
+                loop ( List.skip 1 rolls) 
                     ([10+r1+r2] |> List.append scores)
             | r1::r2::r3::rest when r1+r2=10 -> 
                 loop (List.skip 2 rolls) 
@@ -21,6 +23,26 @@ let scoreFrames rolls =
                     ([r1+r2] |> List.append scores)
     loop rolls []
     
+// Let's try it again
+let scoreFrames2 rolls =
+    let rec loop rolls scores =
+        match rolls with
+            | [] -> scores
+            | 10 :: r1 :: r2 :: rest ->
+                loop ( List.skip 1 rolls) 
+                    ([10+r1+r2] |> List.append scores)
+            | r1::r2::r3::rest when r1+r2=10 -> 
+                loop (List.skip 2 rolls) 
+                    ([r1+r2+r3] |> List.append scores)
+            | r1::r2::rest -> 
+                loop (List.skip 2 rolls) 
+                    ([r1+r2] |> List.append scores)
+              // This is the missing path
+              // Note the lack of squiggly above
+              // This should never be called, but it makes
+              // the code correct. Never leave open paths
+            | r1::r2->[r1] |> (List.append scores) 
+    loop rolls []
 
 let score rolls =
     let frameScores = rolls |> scoreFrames 
