@@ -7,10 +7,17 @@ open FsUnit
 //let n = "n" |> getArg config
 
 //myCommand -s Bob -d 1.3 -n 42
+
+let getExpectedArgs (schema:string) : (string*string) list =
+     let argResults:(string*string list) = 
+                 "^%A#"|>List.fold(fun acc x->acc) (schema,[])
+     argResults     
+     //let rec loop remainingSchema expectedArgs = 
+     
     
 let getArgs (schema:string) (args : string list) = 
      let unmarkedArgs = args |> List.map(fun s -> s.Replace("-", ""))
-     let schemaChars = schema.ToCharArray() |> Array.toSeq 
+     let expectedArgs = schema |> getExpectedArgs  
      unmarkedArgs |> List.partition(fun arg -> schema.IndexOf(arg) <> -1)
     
 let getBoolean (foundArgs : string list) flag =
