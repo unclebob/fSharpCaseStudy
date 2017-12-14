@@ -8,8 +8,11 @@ open FsUnit
 
 //myCommand -s Bob -d 1.3 -n 42
 
-let makeTokens schema = 
-     schema
+let makeTokens schema =
+     [schema]
+     
+ 
+     
 
 let getArgs schema args = 
     [],args
@@ -33,10 +36,20 @@ let ``no schema but with args``() =
      unfoundArgs |> should haveLength 4   
      
 [<Test>]
-let ``break simple schema into tokens``() =    
+let ``break string into sequence of single char strings``() =
+     "abc" |> breakString |> should equal ["a";"b";"c"]
+        
+[<Test>]
+[<Ignore ("")>]
+let ``break single element boolean schema into tokens``() =    
      let schema = "b"
      schema |> makeTokens |> should equal ["b"]
-     
+
+[<Test>]
+[<Ignore ("")>]
+let ``break multi element boolean schema into tokens``() =    
+     let schema = "bv"
+     schema |> makeTokens |> should equal ["b";"v"]    
 
      
 [<Test>]
