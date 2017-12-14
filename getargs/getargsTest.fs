@@ -8,17 +8,24 @@ open FsUnit
 
 //myCommand -s Bob -d 1.3 -n 42
 
+let breakString (s : string) =
+     s.ToCharArray() |> Array.map(fun (c:char)->c.ToString())
+
 let makeTokens schema =
      [schema]
-     
- 
-     
-
-let getArgs schema args = 
-    [],args
     
 
-
+let getArgs (schema:string) (args : string list) = 
+     let flagChar = args.[0].[1]
+     if schema.IndexOf(string flagChar) <> -1 
+     then
+          args, []
+     else
+          [], args
+    
+let getBoolean foundArgs flag =
+     false
+    
 [<Test>]
 let ``no arguments and no schema``() =
      let args = []
@@ -50,18 +57,24 @@ let ``break single element boolean schema into tokens``() =
 let ``break multi element boolean schema into tokens``() =    
      let schema = "bv"
      schema |> makeTokens |> should equal ["b";"v"]    
-
-     
+    
 [<Test>]
-[<Ignore("integration test for later")>]
-let ``single int schema with appropriate arg``() =
-     let args = ["-b"]
+let ``single int schema without appropriate arg``() =
+     let args = ["-f"]
      let schema = "b" 
      let foundArgs, unfoundArgs = args |> getArgs schema
+     foundArgs |> should haveLength 0 
+     unfoundArgs |> should haveLength 1 
+     "b" |> getBoolean foundArgs |> should equal false   
+    
+[<Test>]
+let ``single int schema with appropriate arg``() =
+     let args = ["-f"]
+     let schema = "f" 
+     let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 1 
-     unfoundArgs |> should haveLength 0    
-     
-   
+     unfoundArgs |> should haveLength 0 
+     "f" |> getBoolean foundArgs |> should equal true         
      
 
      
