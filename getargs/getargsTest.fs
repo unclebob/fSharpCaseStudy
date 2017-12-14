@@ -2,19 +2,26 @@ module GetargsTest
 open NUnit.Framework
 open FsUnit
 
+open System.Collections.Generic
+
 //temp = 99;
 //let config = getargs(argv, "n#,s*,d%")
 //let n = "n" |> getArg config
 
 //myCommand -s Bob -d 1.3 -n 42
 
-let getExpectedArgs (schema:string) : (string*string) list =
-     let argResults:(string*string list) = 
-                 "^%A#"|>List.fold(fun acc x->acc) (schema,[])
-     argResults     
-     //let rec loop remainingSchema expectedArgs = 
-     
-    
+// "fbn#s*" -> {f=bool;b=bool;n=int;s=string}
+
+
+
+
+let getExpectedArgs (schema:string) : Dictionary<string,string>  =
+     let schemaChars = schema.ToCharArray() |> Array.toList
+     let rec loop remainingSchemaChars (argsDict:Dictionary<string,string>) =
+          argsDict
+     loop schema (new Dictionary<string,string>())
+          
+       
 let getArgs (schema:string) (args : string list) = 
      let unmarkedArgs = args |> List.map(fun s -> s.Replace("-", ""))
      let expectedArgs = schema |> getExpectedArgs  
@@ -78,6 +85,18 @@ let ``single int schema with inappropriate arg``() =
      unfoundArgs |> should equal ["b"] 
      
 [<Test>]
+let ``expected args for empty schema is empty``() =    
+     let expectedArgs = getExpectedArgs ""
+     expectedArgs |> Seq.cast |> Seq.length |> should equal 0
+     
+[<Test>]
+let ``expected args for schema with one boolean``() =
+     let expectedArgs = getExpectedArgs "b"
+     
+
+     
+[<Test>]
+[<Ignore("it")>]
 let ``single int schema with one appropriate arg``() =
      let args = ["-n";"42"]
      let schema = "n#" 
