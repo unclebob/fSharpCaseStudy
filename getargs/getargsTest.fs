@@ -14,17 +14,17 @@ let breakString (s : string) =
 let makeTokens schema =
      [schema]
     
-
 let getArgs (schema:string) (args : string list) = 
-     let flagChar = args.[0].[1]
-     if schema.IndexOf(string flagChar) <> -1 
+     let unmarkedArgs = args |> List.map(fu
+     let flagChar = if args.Length = 0 then "" else string args.[0].[1]
+     if schema.IndexOf(flagChar) <> -1 
      then
           args, []
      else
           [], args
     
-let getBoolean foundArgs flag =
-     false
+let getBoolean (foundArgs : string list) flag =
+     foundArgs |> List.exists(fun x -> x.Replace("-","") = flag)
     
 [<Test>]
 let ``no arguments and no schema``() =
@@ -59,7 +59,7 @@ let ``break multi element boolean schema into tokens``() =
      schema |> makeTokens |> should equal ["b";"v"]    
     
 [<Test>]
-let ``single int schema without appropriate arg``() =
+let ``single boolean schema without appropriate arg``() =
      let args = ["-f"]
      let schema = "b" 
      let foundArgs, unfoundArgs = args |> getArgs schema
@@ -68,7 +68,7 @@ let ``single int schema without appropriate arg``() =
      "b" |> getBoolean foundArgs |> should equal false   
     
 [<Test>]
-let ``single int schema with appropriate arg``() =
+let ``single boolean schema with appropriate arg``() =
      let args = ["-f"]
      let schema = "f" 
      let foundArgs, unfoundArgs = args |> getArgs schema
