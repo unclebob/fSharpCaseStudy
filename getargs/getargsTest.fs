@@ -15,16 +15,11 @@ let makeTokens schema =
      [schema]
     
 let getArgs (schema:string) (args : string list) = 
-     let unmarkedArgs = args |> List.map(fu
-     let flagChar = if args.Length = 0 then "" else string args.[0].[1]
-     if schema.IndexOf(flagChar) <> -1 
-     then
-          args, []
-     else
-          [], args
+     let unmarkedArgs = args |> List.map(fun s -> s.Replace("-", ""))
+     unmarkedArgs |> List.partition(fun arg -> schema.IndexOf(arg) <> -1)
     
 let getBoolean (foundArgs : string list) flag =
-     foundArgs |> List.exists(fun x -> x.Replace("-","") = flag)
+     foundArgs |> List.exists(fun x -> x = flag)
     
 [<Test>]
 let ``no arguments and no schema``() =
@@ -44,19 +39,7 @@ let ``no schema but with args``() =
      
 [<Test>]
 let ``break string into sequence of single char strings``() =
-     "abc" |> breakString |> should equal ["a";"b";"c"]
-        
-[<Test>]
-[<Ignore ("")>]
-let ``break single element boolean schema into tokens``() =    
-     let schema = "b"
-     schema |> makeTokens |> should equal ["b"]
-
-[<Test>]
-[<Ignore ("")>]
-let ``break multi element boolean schema into tokens``() =    
-     let schema = "bv"
-     schema |> makeTokens |> should equal ["b";"v"]    
+     "abc" |> breakString |> should equal ["a";"b";"c"]  
     
 [<Test>]
 let ``single boolean schema without appropriate arg``() =
@@ -76,7 +59,14 @@ let ``single boolean schema with appropriate arg``() =
      unfoundArgs |> should haveLength 0 
      "f" |> getBoolean foundArgs |> should equal true         
      
-
+[<Test>]
+let ``single boolean schema with one appropriate arg and one inappropriate arg``() =
+     let args = ["-f";"-b"]
+     let schema = "f" 
+     let foundArgs, unfoundArgs = args |> getArgs schema
+     foundArgs |> should haveLength 1 
+     unfoundArgs |> should equal ["b"] 
+     "f" |> getBoolean foundArgs |> should equal true   
      
 
      
