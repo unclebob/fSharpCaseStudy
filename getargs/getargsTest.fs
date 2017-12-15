@@ -40,9 +40,15 @@ let getArgs schema args =
      let rec loop flagsAndValues (foundArgs : Map<string, string*string>) (unfoundArgs : string list) =
           match flagsAndValues with
           | [] -> foundArgs,unfoundArgs
+          | (flag,true)::rest when not (expectedArgs.ContainsKey flag) ->
+               loop rest foundArgs (flag :: unfoundArgs)
           | (flag,true)::rest when expectedArgs.[flag] = "bool" ->
                let newFoundArgs = foundArgs.Add(flag,("bool","true"))
                loop rest newFoundArgs unfoundArgs
+          | (flag,true)::(arg, false) :: rest when (flag.Length > 1) && (flag.[1] = '#') ->
+               let newFoundArgs = foundArgs.Add((string flag.[0]),("int",arg)) 
+               loop rest newFoundArgs unfoundArgs
+          | (arg,false)::rest -> loop rest foundArgs (arg :: unfoundArgs)
  
           | _ -> raise (new System.Exception("Argument Syntax Error"))
           
@@ -56,7 +62,7 @@ let getArgs schema args =
 let getBoolean (foundArgs : Map<_,_>) flag =
      if (foundArgs.ContainsKey flag) && (fst foundArgs.[flag] = "bool") 
           then true
-          else raise (System.Exception("No such flag " + flag)
+          else false
      
 let getInt foundArgs flag = 
      99
@@ -66,7 +72,7 @@ let ``no arguments and no schema``() =
      let args = [||]
      let schema = ""
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 0
+     foundArgs.Count |> should equal 0
      unfoundArgs |> should haveLength 0
      
 [<Test>]
@@ -74,7 +80,7 @@ let ``no schema but with args``() =
      let args = [|"-n"; "1"; "-d"; "3.14"|]
      let schema = ""
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 0 
+     foundArgs.Count |> should equal 0
      unfoundArgs |> should haveLength 4    
     
 [<Test>]
