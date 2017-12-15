@@ -13,9 +13,6 @@ open System
 
 // "fbn#s*" -> {f=bool;b=bool;n=int;s=string}
 
-
-
-
 let getExpectedArgs (schema:string) : Map<string,string>  =
      let schemaChars = schema.ToCharArray() |> Array.toList
      let rec loop remainingSchemaChars (argsMap:Map<string,string>) =
@@ -45,10 +42,11 @@ let getArgs schema args =
           | (flag,true)::rest when expectedArgs.[flag] = "bool" ->
                let newFoundArgs = foundArgs.Add(flag,("bool","true"))
                loop rest newFoundArgs unfoundArgs
-          | (flag,true)::(arg, false) :: rest when (flag.Length > 1) && (flag.[1] = '#') ->
-               let newFoundArgs = foundArgs.Add((string flag.[0]),("int",arg)) 
-               loop rest newFoundArgs unfoundArgs
-          | (arg,false)::rest -> loop rest foundArgs (arg :: unfoundArgs)
+          | (flag,true)::(value,false)::rest 
+               when (expectedArgs.ContainsKey flag) && expectedArgs.[flag] = "int" ->
+                    let newFoundArgs = foundArgs.Add((string flag.[0]),("int",value)) 
+                    loop rest newFoundArgs unfoundArgs
+          | (value,false)::rest -> loop rest foundArgs (value :: unfoundArgs)
  
           | _ -> raise (new System.Exception("Argument Syntax Error"))
           
@@ -64,8 +62,10 @@ let getBoolean (foundArgs : Map<_,_>) flag =
           then true
           else false
      
-let getInt foundArgs flag = 
-     99
+let getInt (foundArgs : Map<_,_>) flag = 
+     if (foundArgs.ContainsKey flag) && (fst foundArgs.[flag] = "int")
+          then System.Int32.Parse (snd foundArgs.[flag])
+          else 0
     
 [<Test>]
 let ``no arguments and no schema``() =
@@ -136,6 +136,20 @@ let ``single int schema with one appropriate arg``() =
      foundArgs.Count |> should equal 1  
      unfoundArgs |> should haveLength 0
      "n" |> getInt foundArgs |> should equal 42   
+     
+[<Test>]
+let ``asking for boolean arg not in schema``() =
+     let args = [|"-f"|]
+     let schema = "b" 
+     let foundArgs, unfoundArgs = args |> getArgs schema
+     "f" |> getBoolean foundArgs
+
+   
+     
+     
+     
+     
+
 
 // next test call getInt on missing arg.    
 // spaces in the schema.
