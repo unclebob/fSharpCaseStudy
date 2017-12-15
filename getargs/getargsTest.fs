@@ -37,22 +37,26 @@ let makeFlagsAndValues (args : string []) =
 let getArgs schema args = 
      let expectedArgs = schema |> getExpectedArgs 
      let flagsAndValues = args |> makeFlagsAndValues
-     let rec loop flagsAndValues foundArgs unfoundArgs =
+     let rec loop flagsAndValues (foundArgs : Map<string, string*string>) (unfoundArgs : string list) =
           match flagsAndValues with
-          | (flag,true)::rest -> 
-               if expectedArgs.[flag] = "bool" 
-               loop rest 
-          | _ as syntaxError -> raise (new System.Exception("Argument Syntax Error" + syntaxError)
+          | [] -> foundArgs,unfoundArgs
+          | (flag,true)::rest when expectedArgs.[flag] = "bool" ->
+               let newFoundArgs = foundArgs.Add(flag,("bool","true"))
+               loop rest newFoundArgs unfoundArgs
+ 
+          | _ -> raise (new System.Exception("Argument Syntax Error"))
           
-     loop flagsAndValues [] []         
+     loop flagsAndValues Map.empty []         
      
      
      //unmarkedArgs |> List.partition(fun arg -> schema.IndexOf(arg) <> -1)
      
 // {"b" ("bool" "value")}
     
-let getBoolean (foundArgs : string list) flag =
-     foundArgs |> List.exists(fun x -> x = flag)
+let getBoolean (foundArgs : Map<_,_>) flag =
+     if (foundArgs.ContainsKey flag) && (fst foundArgs.[flag] = "bool") 
+          then true
+          else raise (System.Exception("No such flag " + flag)
      
 let getInt foundArgs flag = 
      99
@@ -78,7 +82,7 @@ let ``single boolean schema without appropriate arg``() =
      let args = [|"-f"|]
      let schema = "b" 
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 0 
+     foundArgs.Count |> should equal 0 
      unfoundArgs |> should haveLength 1 
      "b" |> getBoolean foundArgs |> should equal false   
     
@@ -87,7 +91,7 @@ let ``single boolean schema with appropriate arg``() =
      let args = [|"-f"|]
      let schema = "f" 
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 1 
+     foundArgs.Count |> should equal 1  
      unfoundArgs |> should haveLength 0 
      "f" |> getBoolean foundArgs |> should equal true         
      
@@ -96,7 +100,7 @@ let ``single boolean schema with one appropriate arg and one inappropriate arg``
      let args = [|"-f";"-b"|]
      let schema = "f" 
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 1 
+     foundArgs.Count |> should equal 1  
      unfoundArgs |> should equal ["b"] 
      "f" |> getBoolean foundArgs |> should equal true   
 
@@ -105,7 +109,7 @@ let ``single int schema with inappropriate arg``() =
      let args = [|"-b"|]
      let schema = "n#" 
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 0 
+     foundArgs.Count |> should equal 0  
      unfoundArgs |> should equal ["b"] 
      
 [<Test>]
@@ -123,7 +127,7 @@ let ``single int schema with one appropriate arg``() =
      let args = [|"-n";"42"|]
      let schema = "n#" 
      let foundArgs, unfoundArgs = args |> getArgs schema
-     foundArgs |> should haveLength 1 
+     foundArgs.Count |> should equal 1  
      unfoundArgs |> should haveLength 0
      "n" |> getInt foundArgs |> should equal 42   
 
