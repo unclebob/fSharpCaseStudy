@@ -3,6 +3,7 @@ open NUnit.Framework
 open FsUnit
 
 open System.Collections.Generic
+open System
 
 //temp = 99;
 //let config = getargs(argv, "n#,s*,d%")
@@ -20,15 +21,20 @@ let getExpectedArgs (schema:string) : Map<string,string>  =
      let rec loop remainingSchemaChars (argsMap:Map<string,string>) =
           match remainingSchemaChars with
           | [] -> argsMap
-          | c::rest when isAlpha c -> loop rest (argsMap.Add("b","bool"))
+          | c::'#'::rest when Char.IsLetter c -> loop rest (argsMap.Add(string c, "int"))
+          | c::rest when Char.IsLetter c -> loop rest (argsMap.Add(string c,"bool"))
           | _ -> raise (new System.Exception("blah"))
 
      loop schemaChars Map.empty
                  
 let getArgs (schema:string) (args : string list) = 
-     let unmarkedArgs = args |> List.map(fun s -> s.Replace("-", ""))
-     let expectedArgs = schema |> getExpectedArgs  
+     let expectedArgs = schema |> getExpectedArgs 
+     let flagsAndValues = args |> List.Map (fun arg -> if arg.[0] = '-' then (arg.substring(1),true) else (arg, false))
+     
+     
      unmarkedArgs |> List.partition(fun arg -> schema.IndexOf(arg) <> -1)
+     
+// {"b" ("bool" "value")}
     
 let getBoolean (foundArgs : string list) flag =
      foundArgs |> List.exists(fun x -> x = flag)
@@ -98,7 +104,6 @@ let ``expected args for schema with one boolean``() =
      expectedArgs.["b"] |> should equal "bool"
         
 [<Test>]
-[<Ignore("it")>]
 let ``single int schema with one appropriate arg``() =
      let args = ["-n";"42"]
      let schema = "n#" 
@@ -108,6 +113,7 @@ let ``single int schema with one appropriate arg``() =
      "n" |> getInt foundArgs |> should equal 42   
 
 // next test call getInt on missing arg.    
+// spaces in the schema.
 
 
      
