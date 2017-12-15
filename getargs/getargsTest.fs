@@ -15,13 +15,16 @@ open System.Collections.Generic
 
 
 
-let getExpectedArgs (schema:string) : Dictionary<string,string>  =
+let getExpectedArgs (schema:string) : Map<string,string>  =
      let schemaChars = schema.ToCharArray() |> Array.toList
-     let rec loop remainingSchemaChars (argsDict:Dictionary<string,string>) =
-          argsDict
-     loop schema (new Dictionary<string,string>())
-          
-       
+     let rec loop remainingSchemaChars (argsMap:Map<string,string>) =
+          match remainingSchemaChars with
+          | [] -> argsMap
+          | c::rest when isAlpha c -> loop rest (argsMap.Add("b","bool"))
+          | _ -> raise (new System.Exception("blah"))
+
+     loop schemaChars Map.empty
+                 
 let getArgs (schema:string) (args : string list) = 
      let unmarkedArgs = args |> List.map(fun s -> s.Replace("-", ""))
      let expectedArgs = schema |> getExpectedArgs  
@@ -92,9 +95,8 @@ let ``expected args for empty schema is empty``() =
 [<Test>]
 let ``expected args for schema with one boolean``() =
      let expectedArgs = getExpectedArgs "b"
-     
-
-     
+     expectedArgs.["b"] |> should equal "bool"
+        
 [<Test>]
 [<Ignore("it")>]
 let ``single int schema with one appropriate arg``() =
