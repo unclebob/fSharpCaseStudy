@@ -23,16 +23,31 @@ let getExpectedArgs (schema:string) : Map<string,string>  =
           | [] -> argsMap
           | c::'#'::rest when Char.IsLetter c -> loop rest (argsMap.Add(string c, "int"))
           | c::rest when Char.IsLetter c -> loop rest (argsMap.Add(string c,"bool"))
-          | _ -> raise (new System.Exception("blah"))
+          | _ as schemaError -> raise (new System.Exception("Schema error " + string schemaError))
 
      loop schemaChars Map.empty
+     
+let makeFlagsAndValues (args : string []) =
+     args |> Array.map (fun arg -> 
+                       if arg.[0] = '-' 
+                            then (arg.Substring(1),true) 
+                            else (arg, false))
+     |> Array.toList
                  
-let getArgs (schema:string) (args : string list) = 
+let getArgs schema args = 
      let expectedArgs = schema |> getExpectedArgs 
-     let flagsAndValues = args |> List.Map (fun arg -> if arg.[0] = '-' then (arg.substring(1),true) else (arg, false))
+     let flagsAndValues = args |> makeFlagsAndValues
+     let rec loop flagsAndValues foundArgs unfoundArgs =
+          match flagsAndValues with
+          | (flag,true)::rest -> 
+               if expectedArgs.[flag] = "bool" 
+               loop rest 
+          | _ as syntaxError -> raise (new System.Exception("Argument Syntax Error" + syntaxError)
+          
+     loop flagsAndValues [] []         
      
      
-     unmarkedArgs |> List.partition(fun arg -> schema.IndexOf(arg) <> -1)
+     //unmarkedArgs |> List.partition(fun arg -> schema.IndexOf(arg) <> -1)
      
 // {"b" ("bool" "value")}
     
@@ -44,7 +59,7 @@ let getInt foundArgs flag =
     
 [<Test>]
 let ``no arguments and no schema``() =
-     let args = []
+     let args = [||]
      let schema = ""
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 0
@@ -52,7 +67,7 @@ let ``no arguments and no schema``() =
      
 [<Test>]
 let ``no schema but with args``() =
-     let args = ["-n"; "1"; "-d"; "3.14"]
+     let args = [|"-n"; "1"; "-d"; "3.14"|]
      let schema = ""
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 0 
@@ -60,7 +75,7 @@ let ``no schema but with args``() =
     
 [<Test>]
 let ``single boolean schema without appropriate arg``() =
-     let args = ["-f"]
+     let args = [|"-f"|]
      let schema = "b" 
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 0 
@@ -69,7 +84,7 @@ let ``single boolean schema without appropriate arg``() =
     
 [<Test>]
 let ``single boolean schema with appropriate arg``() =
-     let args = ["-f"]
+     let args = [|"-f"|]
      let schema = "f" 
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 1 
@@ -78,7 +93,7 @@ let ``single boolean schema with appropriate arg``() =
      
 [<Test>]
 let ``single boolean schema with one appropriate arg and one inappropriate arg``() =
-     let args = ["-f";"-b"]
+     let args = [|"-f";"-b"|]
      let schema = "f" 
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 1 
@@ -87,7 +102,7 @@ let ``single boolean schema with one appropriate arg and one inappropriate arg``
 
 [<Test>]
 let ``single int schema with inappropriate arg``() =   
-     let args = ["-b"]
+     let args = [|"-b"|]
      let schema = "n#" 
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 0 
@@ -105,7 +120,7 @@ let ``expected args for schema with one boolean``() =
         
 [<Test>]
 let ``single int schema with one appropriate arg``() =
-     let args = ["-n";"42"]
+     let args = [|"-n";"42"|]
      let schema = "n#" 
      let foundArgs, unfoundArgs = args |> getArgs schema
      foundArgs |> should haveLength 1 
