@@ -41,7 +41,7 @@ let scoreFrames2 rolls =
               // Note the lack of squiggly above
               // This should never be called, but it makes
               // the code correct. Never leave open paths
-            | r1::r2->[r1] |> (List.append scores) 
+            | r1::r2->raise (new System.ArgumentOutOfRangeException("rolls", "rolls should never have only two items and not match one of our existing cases"))
     loop rolls []
 
 let score rolls =
